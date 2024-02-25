@@ -1,6 +1,6 @@
-use std::{fmt::Display, time::Duration};
+use std::{fmt::Display, str::FromStr, time::Duration};
 
-use reqwest::IntoUrl;
+use reqwest::{IntoUrl, Url};
 use scraper::{ElementRef, Html, Selector};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -119,6 +119,40 @@ pub struct Transcoding {
     pub duration: u64,
     pub snipped: bool,
     pub format: Format,
+}
+
+impl Transcoding {
+    pub fn get_format_protocol(&self) -> &str {
+        self.format.protocol.as_str()
+    }
+
+    /// Performs HTTP request to fetch the real URL
+    pub async fn get_url(&self, client_id: String) -> Result<String, crate::error::ScloudError> {
+        let mut url = Url::from_str(&self.url)
+            .map_err(|_err| ScloudError::invalid_msg("todo: transcoding get url better error"))?;
+
+        url.set_query(Some(&format!("client_id={}", client_id)));
+
+        let text = reqwest::get(url)
+            .await
+            .map_err(|_err| ScloudError::invalid_msg("todo: transcoding get url better error"))?
+            .text()
+            .await
+            .map_err(|_err| ScloudError::invalid_msg("todo: transcoding get url better error"))?;
+
+        let response: Value = serde_json::from_str(&text).unwrap();
+
+        Ok(response
+            .get("url")
+            .ok_or(ScloudError::invalid_msg(
+                "todo: transcoding get url better error",
+            ))?
+            .as_str()
+            .ok_or(ScloudError::invalid_msg(
+                "todo: transcoding get url better error",
+            ))?
+            .to_string())
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
