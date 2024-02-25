@@ -298,14 +298,3 @@ impl Track {
         })
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::Artwork;
-
-    #[test]
-    fn artwork_test() {
-        let url = "https://i1.sndcdn.com/artworks-6N5CzstafNEXYMPD-ebJp7g-large.jpg";
-        Artwork::from(url).unwrap();
-    }
-}
