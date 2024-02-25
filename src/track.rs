@@ -31,7 +31,6 @@ impl ToString for Artwork {
 impl Artwork {
     pub fn from<T: IntoUrl>(url: T) -> Result<Self, ScloudError> {
         let base = url.into_url().map_err(|_err| {
-            println!("{:?}", _err);
             ScloudError::invalid_msg("todo: base url error Artwork new better error message")
         })?;
 
