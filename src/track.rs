@@ -140,7 +140,9 @@ impl Transcoding {
             .await
             .map_err(|_err| ScloudError::invalid_msg("todo: transcoding get url better error"))?;
 
-        let response: Value = serde_json::from_str(&text).unwrap();
+        let response: Value = serde_json::from_str(&text).map_err(|_err| {
+            ScloudError::invalid_msg("todo: transcoding get url, serde serialized fail")
+        })?;
 
         Ok(response
             .get("url")
