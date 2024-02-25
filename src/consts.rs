@@ -1,2 +1,1 @@
-pub const SOUNDCLOUD_BASE: &'static str = "https://soundcloud.com";
-
+pub const VALID_SOUNDCLOUD_DOMAIN: &'static str = "soundcloud.com";
