@@ -13,11 +13,58 @@ pub struct TrackHydration {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Author {}
+pub struct Author {
+    pub username: String,
+    pub avatar: Artwork,
+}
+
+impl Author {
+    fn get_username(hydration: &TrackHydration) -> Result<String, crate::error::ScloudError> {
+        let username = hydration
+            .user
+            .get("username")
+            .ok_or(ScloudError::invalid_msg(
+                "todo: base url error Artwork new better error message",
+            ))?;
+
+        username
+            .as_str()
+            .ok_or(ScloudError::invalid_msg(
+                "todo: base url error Artwork new better error message",
+            ))
+            .map(|val| val.to_string())
+    }
+
+    fn get_avatar_url(hydration: &TrackHydration) -> Result<Artwork, crate::error::ScloudError> {
+        let avatar_url = hydration
+            .user
+            .get("avatar_url")
+            .ok_or(ScloudError::invalid_msg(
+                "todo: base url error Artwork new better error message",
+            ))?;
+
+        let avatar_url = avatar_url
+            .as_str()
+            .ok_or(ScloudError::invalid_msg(
+                "todo: base url error Artwork new better error message",
+            ))
+            .map(|val| val.to_string())?;
+
+        Artwork::from(avatar_url)
+    }
+
+    pub fn from(hydration: &TrackHydration) -> Result<Self, crate::error::ScloudError> {
+        let username = Author::get_username(hydration)?;
+        let avatar = Author::get_avatar_url(hydration)?;
+
+        Ok(Self { username, avatar })
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Artwork {
     pub url: String,
+    pub original: String,
     pub base: String,
     pub extension: String,
 }
@@ -41,7 +88,7 @@ impl Artwork {
         let base_path = base.path().to_string();
 
         let extension = base_path
-            .split(".")
+            .split('.')
             .collect::<Vec<&str>>()
             .get(1)
             .ok_or(ScloudError::invalid_msg(
@@ -59,21 +106,22 @@ impl Artwork {
         let mut base_no_resolution = base_path.split('-').collect::<Vec<&str>>();
         base_no_resolution.pop();
 
-        if !base_no_resolution
-            .get(0)
-            .ok_or(ScloudError::invalid_msg(
-                "todo: Artwork new better error message",
-            ))?
-            .ends_with("artworks")
-        {
+        let url_split_base = base_no_resolution.get(0).ok_or(ScloudError::invalid_msg(
+            "todo: Artwork new better error message",
+        ))?;
+
+        if !(url_split_base.ends_with("artworks") || url_split_base.ends_with("avatars")) {
             return Err(ScloudError::invalid_msg(
                 "todo: Artwork not valid url better message",
             ));
         }
 
+        let new_base = format!("https://{}{}", base_host, base_no_resolution.join("-"));
+
         Ok(Self {
             url: base.to_string(),
-            base: format!("https://{}{}", base_host, base_no_resolution.join("-")),
+            original: format!("{}-{}.{}", new_base, "original", extension),
+            base: new_base,
             extension,
         })
     }
@@ -320,6 +368,10 @@ impl Track {
             .map_err(|_err| ScloudError::invalid_msg("todo: get media from value fail"))
     }
 
+    fn get_author(hydration: &TrackHydration) -> Result<Author, ScloudError> {
+        Author::from(hydration)
+    }
+
     pub fn from_document(document: &Html) -> Result<Self, ScloudError> {
         let track_hydration = Self::hydration(document)?;
 
@@ -327,7 +379,7 @@ impl Track {
             title: Self::get_title(&track_hydration)?,
             url: Self::get_url(&track_hydration)?,
             artwork: Self::get_artwork(&track_hydration)?,
-            author: Author {},
+            author: Self::get_author(&track_hydration)?,
             duration: Self::get_duration(&track_hydration)?,
             media: Self::get_media(&track_hydration)?,
         })
