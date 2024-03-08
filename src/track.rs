@@ -61,7 +61,7 @@ impl Author {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Artwork {
     pub url: String,
     pub original: String,
@@ -106,7 +106,7 @@ impl Artwork {
         let mut base_no_resolution = base_path.split('-').collect::<Vec<&str>>();
         base_no_resolution.pop();
 
-        let url_split_base = base_no_resolution.get(0).ok_or(ScloudError::invalid_msg(
+        let url_split_base = base_no_resolution.first().ok_or(ScloudError::invalid_msg(
             "todo: Artwork new better error message",
         ))?;
 
@@ -226,7 +226,6 @@ impl Track {
 
         let scripts = document
             .select(&script_selector)
-            .into_iter()
             .collect::<Vec<ElementRef>>();
 
         scripts
@@ -246,7 +245,7 @@ impl Track {
             .map_err(|_err| ScloudError::invalid_msg("todo: Track hydration better error message"))
     }
 
-    fn get_user_from(hydration_data: &Vec<Value>) -> Result<Value, ScloudError> {
+    fn get_user_from(hydration_data: &[Value]) -> Result<Value, ScloudError> {
         hydration_data
             .get(6)
             .ok_or(ScloudError::invalid_msg(
@@ -260,7 +259,7 @@ impl Track {
             .cloned()
     }
 
-    fn get_sound_from(hydration_data: &Vec<Value>) -> Result<Value, ScloudError> {
+    fn get_sound_from(hydration_data: &[Value]) -> Result<Value, ScloudError> {
         hydration_data
             .get(7)
             .ok_or(ScloudError::invalid_msg(
@@ -317,7 +316,7 @@ impl Track {
                 "todo: get artwork better error message",
             ))?;
 
-        Artwork::from(&artwork_url.to_string())
+        Artwork::from(artwork_url.to_string())
     }
 
     fn get_url(hydration: &TrackHydration) -> Result<String, ScloudError> {
@@ -375,11 +374,15 @@ impl Track {
     pub fn from_document(document: &Html) -> Result<Self, ScloudError> {
         let track_hydration = Self::hydration(document)?;
 
+        let author = Self::get_author(&track_hydration)?;
+        let artwork = Self::get_artwork(&track_hydration)
+            .map_or_else(|_| author.avatar.clone(), |val| val);
+
         Ok(Self {
             title: Self::get_title(&track_hydration)?,
             url: Self::get_url(&track_hydration)?,
-            artwork: Self::get_artwork(&track_hydration)?,
-            author: Self::get_author(&track_hydration)?,
+            artwork: artwork,
+            author,
             duration: Self::get_duration(&track_hydration)?,
             media: Self::get_media(&track_hydration)?,
         })
