@@ -375,13 +375,13 @@ impl Track {
         let track_hydration = Self::hydration(document)?;
 
         let author = Self::get_author(&track_hydration)?;
-        let artwork = Self::get_artwork(&track_hydration)
-            .map_or_else(|_| author.avatar.clone(), |val| val);
+        let artwork =
+            Self::get_artwork(&track_hydration).map_or_else(|_| author.avatar.clone(), |val| val);
 
         Ok(Self {
             title: Self::get_title(&track_hydration)?,
             url: Self::get_url(&track_hydration)?,
-            artwork: artwork,
+            artwork,
             author,
             duration: Self::get_duration(&track_hydration)?,
             media: Self::get_media(&track_hydration)?,
