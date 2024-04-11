@@ -229,7 +229,7 @@ impl Track {
             .collect::<Vec<ElementRef>>();
 
         scripts
-            .get(11)
+            .get(12)
             .ok_or(ScloudError::invalid_msg(
                 "todo: Track hydration better error message",
             ))
