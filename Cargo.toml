@@ -8,8 +8,8 @@ edition = "2021"
 
 [dependencies]
 regex = "1.10.3"
-reqwest = { version = "0.11.23", features = [] }
-scraper = "0.18.1"
+reqwest = { version = "0.12.3", features = [] }
+scraper = "0.19.0"
 serde = { version = "1.0.196", features = ["derive"] }
 serde_json = "1.0.114"
-tokio = {  version = "1.36.0", features = ["full"]}
+tokio = { version = "1.36.0", features = ["full"] }
