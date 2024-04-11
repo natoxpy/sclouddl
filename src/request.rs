@@ -47,7 +47,7 @@ impl ScloudRequest {
             return Ok(());
         }
 
-        return Err(ScloudError::invalid_host(&host_str.to_string()));
+        Err(ScloudError::invalid_host(&host_str.to_string()))
     }
 
     fn get_request_headers(&self) -> Result<HeaderMap, ScloudError> {
@@ -64,7 +64,7 @@ impl ScloudRequest {
     async fn send_request(&self) -> Result<Response, ScloudError> {
         let client = reqwest::ClientBuilder::new()
             .build()
-            .map_err(|err| ScloudError::Reqwest(err))?;
+            .map_err(ScloudError::Reqwest)?;
 
         let headers = self.get_request_headers()?;
 
@@ -73,14 +73,11 @@ impl ScloudRequest {
             .headers(headers)
             .send()
             .await
-            .map_err(|err| ScloudError::Reqwest(err))
+            .map_err(ScloudError::Reqwest)
     }
 
     async fn get_text(&self, response: Response) -> Result<String, ScloudError> {
-        response
-            .text()
-            .await
-            .map_err(|err| ScloudError::Reqwest(err))
+        response.text().await.map_err(ScloudError::Reqwest)
     }
 
     fn parse_text(&self, text: String) -> Html {

@@ -4,7 +4,7 @@ use scraper::{ElementRef, Html, Selector};
 
 #[derive(Debug)]
 pub enum ScloudKind {
-    Track(Track),
+    Track(Box<Track>),
     Playlist,
     // TODO: Implementing the options bellow request OAuth ID from soundcloud
     Likes,
@@ -54,12 +54,12 @@ impl ScloudResponse {
 
     fn is_playlist(&self) -> Result<bool, ScloudError> {
         let meta_content = self.get_meta_element_content()?;
-        return Ok(meta_content == "music.playlist");
+        Ok(meta_content == "music.playlist")
     }
 
     fn is_track(&self) -> Result<bool, ScloudError> {
         let meta_content = self.get_meta_element_content()?;
-        return Ok(meta_content == "music.song");
+        Ok(meta_content == "music.song")
     }
 
     fn handle_as_track(&self) -> Result<Track, ScloudError> {
@@ -69,19 +69,19 @@ impl ScloudResponse {
     async fn client_id_from_script(script_src: String) -> Result<String, ScloudError> {
         let req = reqwest::get(script_src)
             .await
-            .map_err(|err| ScloudError::Reqwest(err))?
+            .map_err(ScloudError::Reqwest)?
             .text()
             .await
-            .map_err(|err| ScloudError::Reqwest(err))?;
+            .map_err(ScloudError::Reqwest)?;
 
         let client_id = req
             .split(",client_id:\"")
             .collect::<Vec<&str>>()
             .get(1)
             .ok_or(ScloudError::invalid_msg("get client id not found"))?
-            .split("\"")
+            .split('\"')
             .collect::<Vec<&str>>()
-            .get(0)
+            .first()
             .ok_or(ScloudError::invalid_msg("get client id not found"))?
             .to_string();
 
@@ -89,9 +89,8 @@ impl ScloudResponse {
     }
 
     pub async fn get_client_id(&self) -> Result<String, ScloudError> {
-        let script_selector = Selector::parse("script").map_err(|_err| {
-            ScloudError::invalid_msg("todo: Track hydration better error message")
-        })?;
+        let script_selector = Selector::parse("script")
+            .map_err(|_err| ScloudError::invalid_msg("get client id, could not find scripts"))?;
 
         let scripts = self
             .document
@@ -99,7 +98,7 @@ impl ScloudResponse {
             .collect::<Vec<ElementRef<'_>>>();
 
         let script_src = scripts
-            .get(scripts.len() - 1)
+            .last()
             .ok_or(ScloudError::invalid_msg("get client id script not found"))?
             .attr("src")
             .ok_or(ScloudError::invalid_msg(
@@ -113,7 +112,7 @@ impl ScloudResponse {
     pub fn context(&self) -> Result<ScloudContext, ScloudError> {
         if self.is_track()? {
             return Ok(ScloudContext {
-                kind: ScloudKind::Track(self.handle_as_track()?),
+                kind: ScloudKind::Track(Box::new(self.handle_as_track()?)),
             });
         };
 
@@ -121,6 +120,6 @@ impl ScloudResponse {
             // TODO: Handle playlist scenario
         }
 
-        return Err(ScloudError::NoImplemented);
+        Err(ScloudError::NoImplemented)
     }
 }
